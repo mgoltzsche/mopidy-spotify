@@ -179,3 +179,24 @@ def test_on_start_doesnt_refresh_playlists_if_not_allowed(
     client_mock = web_mock.SpotifyOAuthClient.return_value
     client_mock.get_user_playlists.assert_not_called()
     assert "Refreshed 0 playlists" not in caplog.text
+
+
+def test_refresh_login_logs_in_and_refreshes_playlists(config: dict[str, Any]):
+    backend = get_backend(config)
+    backend._web_client.login.return_value = True
+    backend.playlists = mock.Mock()
+
+    backend.refresh_login()
+
+    backend._web_client.login.assert_called_once()
+    backend.playlists.refresh.assert_called_once()
+
+
+def test_refresh_login_skips_playlists_when_login_fails(config: dict[str, Any]):
+    backend = get_backend(config)
+    backend._web_client.login.return_value = False
+    backend.playlists = mock.Mock()
+
+    backend.refresh_login()
+
+    backend.playlists.refresh.assert_not_called()

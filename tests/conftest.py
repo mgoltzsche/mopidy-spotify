@@ -32,6 +32,7 @@ def config(tmp_path: Path) -> dict[str, Any]:
             "allow_cache": True,
             "cache_size": 8192,
             "allow_playlists": True,
+            "auth_storage": "auto",
             "search_album_count": 20,
             "search_artist_count": 10,
             "search_track_count": 50,

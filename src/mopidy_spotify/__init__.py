@@ -45,6 +45,10 @@ class Extension(ext.Extension):
         schema["allow_network"] = config.Deprecated()  # since 5.0
         schema["allow_playlists"] = config.Boolean()
 
+        schema["auth_storage"] = config.String(
+            choices=("auto", "plaintext", "keyring"),
+        )
+
         schema["search_album_count"] = config.Integer(minimum=0, maximum=200)
         schema["search_artist_count"] = config.Integer(minimum=0, maximum=200)
         schema["search_track_count"] = config.Integer(minimum=0, maximum=200)
@@ -56,8 +60,12 @@ class Extension(ext.Extension):
     @override
     def setup(self, registry: ext.Registry) -> None:
         from mopidy_spotify.backend import SpotifyBackend  # noqa: PLC0415
+        from mopidy_spotify.oauth.http import make_auth_app  # noqa: PLC0415
 
         registry.add("backend", SpotifyBackend)
+        # The bundled http extension reads this live list when the HTTP server
+        # starts, so registration order relative to it does not matter.
+        registry.add("http:app", {"name": "spotify", "factory": make_auth_app})
 
     @override
     def get_command(self) -> cyclopts.App:

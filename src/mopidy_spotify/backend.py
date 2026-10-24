@@ -52,6 +52,17 @@ class SpotifyBackend(pykka.ThreadingActor, backend.Backend):
         if self.playlists is not None:
             self.playlists.refresh()
 
+    def refresh_login(self) -> None:
+        """Re-authenticate the Web API client after out-of-band authorization.
+
+        Called when the web UI completes authorization while Mopidy is running;
+        token refreshes otherwise pick up the new state lazily.
+        """
+        if self._web_client is None:
+            return
+        if self._web_client.login() and self.playlists is not None:
+            self.playlists.refresh()
+
 
 class SpotifyPlaybackProvider(backend.PlaybackProvider):
     backend: SpotifyBackend

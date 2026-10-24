@@ -38,6 +38,56 @@ The website is only a callback user interface. It does not receive the PKCE
 verifier, exchange the authorization code, or receive an access or refresh
 token. The Mopidy process owns the complete OAuth exchange.
 
+## Web authorization UI
+
+The same PKCE flow is exposed as a web app under `/spotify/auth` on Mopidy's
+HTTP server, so authorization does not require terminal access to the Mopidy
+host. The browser replaces the CLI actor; the exchange itself is unchanged:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant UI as WebUI (/spotify/auth)
+    participant Server as Mopidy HTTP server
+    participant Site as mopidy.com callback UI
+    participant Spotify as Spotify
+    participant State as Local auth state
+
+    User->>UI: Open page and select "Log in"
+    UI->>Server: POST start
+    Server->>Server: Generate verifier, challenge, and state (memory only)
+    Server-->>UI: Authorization URL and flow id
+    User->>Spotify: Authorize Mopidy-Spotify
+    Spotify->>Site: Redirect with code and state
+    Site->>User: Display copyable callback result
+    User->>UI: Paste callback result
+    UI->>Server: POST finish with flow id and result
+    Server->>Server: Validate state
+    Server->>Spotify: Exchange code and verifier
+    Spotify-->>Server: Return refresh token
+    Server->>State: Persist local authorization
+    Server->>Server: Notify backend to re-login
+```
+
+Design constraints:
+
+- The pending challenge lives in memory only, in a single slot with a short
+  expiry, and is consumed on finish. The verifier and CSRF state are never
+  persisted, matching the CLI contract.
+- The refresh-token storage policy comes from `[spotify] auth_storage`
+  (`auto`, `plaintext`, or `keyring`). The browser user does not choose it,
+  because keyring availability depends on the daemon's environment, not the
+  user's. The status endpoint reports the persisted backend without resolving
+  or touching the stored secret.
+- The token exchange and persistence block, so they run outside the Tornado
+  event loop.
+- Mopidy's HTTP server is unauthenticated LAN-trust. The POST endpoints
+  additionally require a JSON body and a same-origin browser context to limit
+  cross-site request forgery, and the flow id acts as a request nonce.
+- After a successful exchange the Spotify backend is asked to re-login, so
+  playlists appear without a restart. Library access picks up the new token
+  lazily on the next refresh either way.
+
 ## Authentication modes and states
 
 `auth.json` records the authorization mode and its state. Keeping rejected and
@@ -173,6 +223,10 @@ The command defaults to `--storage auto`: initial authorization tries to save
 the actual refresh token in keyring and trusts the backend's write result.
 There is no readback check or disposable probe entry. If the write fails, the
 setup flow warns before explicitly saving the token as plaintext instead.
+
+The Web UI applies the same policy from `[spotify] auth_storage`, which the
+operator sets in configuration; the browser user never selects a storage
+backend.
 
 Initial storage policy is distinct from the backend recorded in the manifest.
 `oauth.flow.StoragePolicy` describes the user's initial authorization choice:

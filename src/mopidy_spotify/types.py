@@ -11,6 +11,7 @@ class SpotifyConfig(TypedDict):
     allow_cache: bool
     cache_size: int
     allow_playlists: bool
+    auth_storage: str
     search_album_count: int
     search_artist_count: int
     search_track_count: int

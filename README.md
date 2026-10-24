@@ -106,6 +106,23 @@ sudo mopidyctl spotify auth web
 Run `mopidy spotify logout` (or `sudo mopidyctl spotify logout` for a system
 service) to clear library authorization and cached playback credentials.
 
+### Authorizing from a web browser
+
+With Mopidy running and its HTTP server enabled, you can authorize without a
+terminal: open `http://<mopidy-host>:6680/spotify/auth/`, select "Log in with
+Spotify", approve access, then paste the result shown by the browser into the
+page. The page also reports the current authorization status and where the
+refresh token is stored.
+
+The page stores the refresh token according to `[spotify] auth_storage`
+(`auto`, `plaintext`, or `keyring`; default `auto`), so strict keyring storage
+remains an operator choice rather than a browser decision. Because the running
+Mopidy process saves the token, keyring storage requires an accessible and
+unlocked keyring for the user that runs Mopidy, as noted above.
+
+Mopidy's HTTP server has no authentication of its own; treat this page like any
+other unauthenticated Mopidy service and restrict network access as needed.
+
 ### Migrating from the old setup
 
 Existing `client_id` and `client_secret` settings in the `[spotify]` section

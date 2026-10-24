@@ -12,6 +12,7 @@ def test_get_default_config() -> None:
 
     assert "[spotify]" in config
     assert "enabled = true" in config
+    assert "auth_storage = auto" in config
 
 
 def test_get_config_schema() -> None:
@@ -32,6 +33,7 @@ def test_get_config_schema() -> None:
     assert "search_album_count" in schema
     assert "search_artist_count" in schema
     assert "search_track_count" in schema
+    assert "auth_storage" in schema
 
 
 def test_bridge_credentials_are_optional() -> None:
@@ -47,7 +49,13 @@ def test_setup() -> None:
     ext = Extension()
     ext.setup(registry)
 
-    registry.add.assert_called_with("backend", backend_lib.SpotifyBackend)
+    registry.add.assert_any_call("backend", backend_lib.SpotifyBackend)
+    http_apps = [
+        call for call in registry.add.call_args_list if call.args[0] == "http:app"
+    ]
+    assert len(http_apps) == 1
+    assert http_apps[0].args[1]["name"] == "spotify"
+    assert callable(http_apps[0].args[1]["factory"])
 
 
 def test_get_command_exposes_spotify_commands() -> None:

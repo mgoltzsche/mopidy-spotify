@@ -147,6 +147,14 @@ class Store:
             credential_fingerprint=stored_manifest.credential_fingerprint,
         )
 
+    def load_manifest(self) -> manifest.Manifest | None:
+        """Load the persisted manifest without resolving any secret backend.
+
+        Status reporting must never touch keyring storage or unwrap an inline
+        token, so this exposes the manifest itself rather than a snapshot.
+        """
+        return self._load_manifest()
+
     def load(self) -> Snapshot | None:
         """Load and resolve the current authorization snapshot."""
         stored_manifest = self._load_manifest()
