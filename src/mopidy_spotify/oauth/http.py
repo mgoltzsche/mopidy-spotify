@@ -2,7 +2,8 @@
 
 This module exposes the same PKCE flow that ``mopidy spotify auth web`` drives
 from a terminal as a small web app, mounted under ``/spotify/auth`` on Mopidy's
-HTTP server. The browser receives the authorization URL, the user completes
+HTTP server; requests to the bare ``/spotify`` mount point are redirected there.
+The browser receives the authorization URL, the user completes
 authorization at Spotify, and pastes the callback result displayed by the
 redirect page back into the page. The server then validates the state,
 exchanges the code, and persists the refresh token exactly as the CLI does.
@@ -190,6 +191,19 @@ class _AuthHandler(tornado.web.RequestHandler):
         self.write({"error": "Cross-origin requests are not allowed."})
 
 
+class RootRedirectHandler(_AuthHandler):
+    """Redirect the bare extension mount point to the auth page.
+
+    The target is derived from the request path instead of a hardcoded
+    ``/spotify`` prefix, so the app keeps working if Mopidy ever mounts it
+    under a different name.
+    """
+
+    def get(self) -> None:
+        prefix = self.request.path.rstrip("/")
+        self.redirect(f"{prefix}/auth/")
+
+
 class PageHandler(_AuthHandler):
     def get(self) -> None:
         self.set_header("Content-Type", "text/html; charset=UTF-8")
@@ -255,6 +269,7 @@ def make_auth_app(
     """Build the ``http:app`` request rules for Spotify Web authorization."""
     service = AuthService(config, core)
     return [
+        (r"/?", RootRedirectHandler, {"service": service}),
         (r"/auth/?", PageHandler, {"service": service}),
         (r"/auth/status", StatusHandler, {"service": service}),
         (r"/auth/start", StartHandler, {"service": service}),

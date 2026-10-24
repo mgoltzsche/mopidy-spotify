@@ -42,7 +42,8 @@ token. The Mopidy process owns the complete OAuth exchange.
 
 The same PKCE flow is exposed as a web app under `/spotify/auth` on Mopidy's
 HTTP server, so authorization does not require terminal access to the Mopidy
-host. The browser replaces the CLI actor; the exchange itself is unchanged:
+host; requests to the bare `/spotify` path are redirected to `/spotify/auth`.
+The browser replaces the CLI actor; the exchange itself is unchanged:
 
 ```mermaid
 sequenceDiagram

@@ -131,6 +131,18 @@ class PageTests(WebAuthTestCase):
         assert response.code == 200
 
 
+class RootRedirectTests(WebAuthTestCase):
+    def test_root_redirects_to_auth_page(self):
+        response = self.fetch("/", follow_redirects=False)
+        assert response.code == 302
+        assert response.headers["Location"] == "/auth/"
+
+    def test_root_redirect_target_resolves_to_page(self):
+        response = self.fetch("/")
+        assert response.code == 200
+        assert b"Log in with Spotify" in response.body
+
+
 class StartFinishTests(WebAuthTestCase):
     def setUp(self):
         super().setUp()
